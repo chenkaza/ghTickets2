@@ -1,0 +1,204 @@
+html{
+    font-size: 62.5%;
+}
+
+body{
+    margin: 0;
+    background: #0a4175;
+    font-family: 'arial',sans-serif;
+}
+
+.clearfix:after{
+    display: block;
+    content: '';
+    clear: both;
+}
+
+.container{
+    background: #fff;
+    max-width: 480px;
+    min-height:800px; 
+    margin: 0 auto;
+    padding-bottom: 0.5rem;
+    position: relative; 
+    box-shadow: 5px 5px rgba(0, 0, 0, 0.15);
+}
+
+.fetch-form{
+    padding: 1.5rem;
+    background: #5497d5
+}
+
+.fetch-input{
+    width: 80%;
+    margin: 0;
+    padding: 1rem;
+    border: 0;
+    color: #404040;
+    font-size: 1.9rem;
+    outline-color: #0a4175;
+}
+
+.fetch-btn{
+    width: 20%;  
+    background: #0a4175;
+    color:#fff;
+    text-transform: uppercase;
+    font-weight: bold;
+    border: none;
+    padding: 1rem 0;
+    font-size: 1.9rem;
+}
+
+.fetch-btn:hover, .fetch-btn:focus{
+    background: #eb3455;
+}
+
+.fetch-message{
+    padding: 1.5rem;
+    text-align: center;
+    color: #0a4175;
+    font-size: 2rem;
+}
+
+.fetch-title{
+    font-size: 3rem;
+    font-weight: bold;  
+    line-height: 5rem;
+}
+
+.user-ticket{
+    position: relative;
+    margin:0 1.5rem 1.5rem;
+    height: 12rem;
+    background: #5497d5;
+    padding: 1rem;
+    box-shadow: 0.5rem 0.5rem rgba(0, 0, 0, 0.15);
+}
+
+.user-avatar{
+    height: 100%;  
+    float: left;
+}
+
+.user-data{
+    float: left;
+    margin-left: 1rem;
+}
+
+.user-detail{
+    color: #fff;
+    font-size: 1.7rem;
+    margin-bottom: 2rem;   
+}
+
+.user-link{
+    background: #fff;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #0a4175;
+    font-weight: bold;
+    transition: all 0.2s;
+    outline: 0;
+}
+
+.user-link:hover , .user-link:focus{
+    box-shadow: 0.4rem 0.4rem rgba(0, 0, 0, 0.4);  
+}
+
+button{
+    border:0;
+    background: #fff;
+    float: right;
+    font-size: 2.3rem; 
+    cursor: pointer;
+    outline: 0;
+    transition: all 0.2s;
+}
+
+.like-button {
+    padding: 0;
+    color:rgba(235, 52, 85, 0.5);
+}
+
+.like-button:hover , .like-button:focus{
+    box-shadow: 0.4rem 0.4rem rgba(0, 0, 0, 0.4);  
+}
+
+.like{
+    color:#eb3455;
+    transition: all 0.5s;
+}
+
+.like-button .icon{
+    padding: 0.5rem;
+}
+
+.remove-button{
+    padding:  0;
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    color:#404040;
+}
+
+.remove-button:hover , .remove-button:focus{
+    box-shadow: 0.4rem 0.4rem rgba(0, 0, 0, 0.4);
+}
+
+.remove-button .icon{
+    padding: 0.5rem 0.8rem;
+}
+
+.error-message{
+    position: relative;
+    margin: 1rem 1.5rem; 
+    padding: 1rem;
+    background: #eb3455;
+    color: #fff;
+    font-size: 1.7rem;
+    line-height: 2.5rem;    
+}
+
+.close-button{
+    padding:  0 0.5rem;  
+    color: #eb3455;
+}
+
+.close-button:hover, .close-button:focus {
+    color: #404040;
+}
+
+@media screen and (max-width:768px){
+    html{
+        font-size: 85%;
+    }
+
+    body{
+        background: #fff;
+    }
+
+    .container{
+        max-width: 100%;
+        min-height: 100%;
+        box-shadow: none;
+    }
+}
+
+@media screen and (max-width:640px){
+    html{
+        font-size: 75%;
+    }
+}
+
+@media screen and (max-width:480px){
+    html{
+        font-size: 62.5%;
+    }
+}
+
+@media screen and (max-width:380px){
+    html{
+        font-size: 50%;
+    }
+}

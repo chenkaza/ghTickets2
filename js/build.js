@@ -8,178 +8,258 @@
             require('../../modules/style'),
             require('../../modules/eventlisteners')
         ]),
-        h = require('../../h.js');
+        h = require('../../h.js'),
     
-    var utils = {
-        data : JSON.parse(localStorage.getItem('data')) || [],
-        error : false,
-        container : document.querySelector('.container'),
-    }
-    
-    var fetchReq = {
-        fetchCb : function(json){
-			if(json.message == "Not Found") {
-				utils.error = true;
-			} else{
-				utils.error = false;
-                behavior.removeInput();
-				utils.data.push({user: json.login, url: json.html_url, imgsrc: json.avatar_url, repos: json.public_repos, liked: ''})
-			}
-		},
-        fetchGh : function(url){
-			fetch(url)
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(fetchReq.fetchCb)
-                .then(view.render)
-                .catch(function(ex) {
-                    console.log('parsing failed', ex)
-                })
-		},
-        fetchUser : function(e){
-            e.preventDefault();
-            var fetchInput = document.querySelector('.fetch-input'),
-                username = fetchInput.value,
-                requri = 'https://api.github.com/users/'+username;
-			fetchReq.fetchGh(requri);
-			fetchInput.value = "";
-        }        
-    }
-    
-    var view = {
-        viewTicket : function(ticket){
-            var result = h('li.user-ticket',{
-                                style: {opacity: '0', transition: 'opacity 0.5s',delayed: {opacity: '1'}}
-                                }, [
-                            h('img.user-avatar', {props: {src: ticket.imgsrc}}),
-                            h('ul.user-data', [
-                                h('li.user-detail', 'User-Name: ' + ticket.user),
-                                h('li.user-detail', 'Public Repositories: ' + ticket.repos),
-                                h('li.user-detail', [
-                                    h('a.user-link', {props: {href: ticket.url, target: '_blank'}}, 'Checkout User')
-                                ]),  
-                            ]),
-                            h('button.like-button' + ticket.liked, {
-                                props: { value: ticket.user },
-                                on: {click: behavior.toggleLike}
-                            }, [h('i.fa.fa-heart.icon')]),
-                            h('button.remove-button', {
-                                props: { value: ticket.user },
-                                on: { click: behavior.removeTicket }
-                            }, [h('i.fa.fa-times.icon')])
-                            
-                         ]);
-            return result;
-		},
-		viewError : function(){
-			var result = [
-                    h('form.fetch-form', [
-                        h('input.fetch-input', {
-                            on: { input: behavior.writeInput },
-                            props: { type: 'text', placeholder: 'Enter a gitHub username...' }
-                        }),
-                        h('button.fetch-btn', {
-                            on: { click: fetchReq.fetchUser }
-                        }, 'Fetch!')
-                    ]),
-                    h('div.fetch-message', [
-                        h('h2.fetch-title', 'Hold tight!'),
-                        h('span', 'We are about to fetch '),
-                        h('span.query-name', '...')
-                    ]),
-                    h('ul.users-list', utils.data.map(view.viewTicket)),
-                    h('div.error-message.clearfix',{
-                            style: {opacity: '0', transition: 'opacity 0.5s', delayed: {opacity: '1'}}
-                            }, [
-                        h('span', 'Oops! there is no such username :('),
-                        h('button.close-button', {
-                            on: { click: behavior.removeErrormsg }
-                        }, [h('i.fa.fa-times.icon')])
-                    ])
-                ];
-			return result;
+        appData = JSON.parse(localStorage.getItem('data')) || 
+        {
+        query : '...',
+        tickets : [],
+        error: false
         },
-        viewList : function(){
-            var result = [
-                h('form.fetch-form', [
-                    h('input.fetch-input', {
-                        on: { input: behavior.writeInput },
-                        props: { type: 'text', placeholder: 'Enter a gitHub username...' }
-                    }),
-                    h('button.fetch-btn', {
-                        on: { click: fetchReq.fetchUser }
-                    }, 'Fetch!')
-                ]),
-                h('div.fetch-message', [
-                    h('h2.fetch-title', 'Hold tight!'),
-                    h('span', 'We are about to fetch '),
-                    h('span.query-name', '...')
-                ]),
-                h('ul.users-list', utils.data.map(view.viewTicket))
-            ];
-            return result;
+
+        pubsub = {
+            events: {},
+            sub: function (eventName, fn) {
+                this.events[eventName] = this.events[eventName] || [];
+                this.events[eventName].push(fn);
+            },
+            unsub: function(eventName, fn) {
+                if (this.events[eventName]) {
+                    for (var i = 0; i < this.events[eventName].length; i++) {
+                        if (this.events[eventName][i] === fn) {
+                            this.events[eventName].splice(i, 1);
+                            break;
+                        }
+                    };
+                }
+            },
+            pub: function (eventName, args) {
+                if (this.events[eventName]) {
+                    this.events[eventName].forEach(function(fn) {
+                        if(args instanceof Array){
+                            fn.apply(this , args);
+                        }
+                        else{
+                          fn(args);  
+                        } 
+                    });
+                }
+            }
         },
-        viewAll : function (data, error) {
-            return h('section.container', error ? view.viewError(data) : view.viewList(data));
+
+        uiEhandlers = {
+
+            getInput: function(){
+                var input = this.value;
+                pubsub.pub('app/gotInput' , [input , appData]);
+            },
+
+            getUrl : function(e){
+                var fetchInput = document.querySelector('.fetch-input');
+                var username = fetchInput.value,
+                    url = 'https://api.github.com/users/'+username;
+                fetchInput.value = "";
+                pubsub.pub('app/gotUrl' , url);
+                e.preventDefault();
+            },
+
+            closeError : function(){
+                pubsub.pub('app/closeError' , appData);
+            },
+
+            getToremove : function(){
+                var ticketName = this.value;
+                pubsub.pub('app/removeClick' , [ticketName , appData]);
+            },
+
+            getLiked : function(){
+                var ticketName = this.value;
+                pubsub.pub('app/likeClick' , [ticketName , appData]);
+            }  
+
         },
-        render : function() {
-            localStorage.setItem('data' , JSON.stringify(utils.data));
-            initApp.vnode = patch(initApp.vnode, view.viewAll(utils.data , utils.error));
-        }    
-    }
     
-    var behavior = {
-        queryName : document.querySelector('.query-name'),
-        toggleLike : function(){
-            var likeButton = this,
-                currentTicket = this.value;
-            for(var i=0 ; i < utils.data.length ; i++){
-                if(utils.data[i].user == currentTicket){
-                    if(utils.data[i].liked){
-                        utils.data[i].liked = '';                        
-                    }
-                    else{
-                        utils.data[i].liked = '.like';
-                    }    
+        render = (function (){
+            
+            var container = document.querySelector('.container'),
+                vnode;
+
+            function formView(){
+                var result = h('form.fetch-form', [
+                                h('input.fetch-input' , { props: { type: 'text', placeholder: 'Enter a gitHub username...' } , on: { input: uiEhandlers.getInput } }), 
+                                h('button.fetch-btn' , { on : { click: uiEhandlers.getUrl } } , 'Fetch!')
+                             ]);
+                             
+                return result;
+            };
+
+            function fetchMsgView(data){
+                var result = h('div.fetch-message', [
+                                h('h2.fetch-title' , 'Hold tight!'), 
+                                h('span' , 'We are about to fetch '), 
+                                h('span.query-name' , data.query)
+                             ]); 
+                return result;
+            };
+
+            function ListView(data){
+                var result = h('ul.users-list' , data.tickets.map(ticketView));
+                return result;
+            };
+
+            function ticketView(ticket){
+                
+                var userAvater = h('img.user-avatar' , { props: { src: ticket.imgsrc } }),
+                    
+                    userDetails = h('ul.user-data' , [
+                                     h('li.user-detail' , 'User-Name: ' + ticket.user),
+                                     h('li.user-detail' , 'Public Repositories: ' + ticket.repos),
+                                     h('li.user-detail' , [
+                                        h('a.user-link' , { props: { href: ticket.url , target: '_blank' } } , 'Checkout User')
+                                     ]),  
+                                  ]),
+                    
+                    LikeBtn = function(){
+                        var liked = 'button.like-button.like',
+                            unliked = 'button.like-button',
+                            selector = ticket.liked ? liked : unliked,
+                            result = h(selector , { props: { value: ticket.user } , on : { click: uiEhandlers.getLiked } }, [
+                                       h('i.fa.fa-heart.icon')
+                                     ]);
+                        return result;
+                    },
+                    
+                    rmBtn = h('button.remove-button' , { props: { value: ticket.user } , on : { click: uiEhandlers.getToremove } }, [
+                               h('i.fa.fa-times.icon')
+                            ]);
+
+                return h('li.user-ticket',[userAvater , userDetails , LikeBtn() , rmBtn]);   
+            };
+
+            function errorView(data){
+                
+                var errorMsg = h('div.error-message.clearfix' , [
+                                  h('span' , 'Oops! there is no such username :('),
+                                  h('button.close-button' , { on: { click: uiEhandlers.closeError } } , [
+                                     h('i.fa.fa-times.icon')
+                                  ])
+                               ]),
+                    
+                    hidden = h('div.error-message.hidden');
+                
+                if(data.error){
+                    return errorMsg;
+                }
+                else{
+                    return hidden
                 }
             };
-            view.render();
-		},
-        removeTicket : function(){
-            var tormTicket = this.value,
-                ticketIndex;
-            for(var i=0 ; i < utils.data.length ; i++){
-                if(utils.data[i].user == tormTicket){
-                    ticketIndex = i;
-                };
+
+            function viewAll(data){
+                return h('section.container',[ formView() , fetchMsgView(data) , ListView(data) , errorView(data) ]);
             };
-            utils.data.splice(ticketIndex , 1);
-            view.render();
-        },
-		removeErrormsg : function(){
-			utils.error = false;
-            behavior.removeInput();
-			view.render();
-		},
-		writeInput : function(){
-            var queryName = document.querySelector('.query-name');
-            queryName.innerHTML = this.value;
-		},
-        removeInput : function(){
-            var queryName = document.querySelector('.query-name');
-            queryName.innerHTML = "...";
-		},
-    }
+
+            function storageData(data){
+                localStorage.setItem('data' , JSON.stringify(data)); 
+            };
+
+            function initRender(data){
+                vnode = patch(container , viewAll(data));
+            };
+
+            function renderView(data){
+                vnode = patch(vnode , viewAll(data));
+            };
+
+            pubsub.sub('DOMloaded',initRender);
+            pubsub.sub('dataChanged',storageData);
+            pubsub.sub('dataChanged',renderView);
+
+        })(),
+ 
+        changeData = (function(){
+                
+            function addTicket(json , data){
+                if(json.message == "Not Found"){
+                    data.error = true;
+                }
+                else{
+                    data.query = '...';
+                    data.tickets.push({user: json.login , url: json.html_url , imgsrc: json.avatar_url , repos: json.public_repos , liked: false });   
+                }
+                pubsub.pub('dataChanged' , appData);
+            };
+
+            function falseError(data){
+                data.error = false;
+                data.query = '...'
+                pubsub.pub('dataChanged' , appData);
+            };
+
+            function removeTicket(ticketName , data){
+                var ticketIndex;
+                for(var i = 0 ; i < data.tickets.length ; i++){
+                    if(data.tickets[i].user == ticketName){
+                        ticketIndex = i;
+                        break;
+                    };
+                };
+                data.tickets.splice(ticketIndex , 1);
+                pubsub.pub('dataChanged' , appData);
+            };
+
+            function changeLike(ticketName , data){
+                for(var i = 0 ; i < data.tickets.length ; i++){
+                    if(data.tickets[i].user == ticketName){
+                        if(data.tickets[i].liked){
+                            data.tickets[i].liked = false;                        
+                        }
+                        else{
+                            data.tickets[i].liked = true;
+                        }
+                        break;
+                    }
+                }
+                pubsub.pub('dataChanged' , appData);
+            };
+
+            function setQuery(input , data){
+                data.query = input ;
+                pubsub.pub('dataChanged' , appData);
+            };
+
+            pubsub.sub('app/fetched' , addTicket);
+            pubsub.sub('app/closeError' , falseError);
+            pubsub.sub('DOMloaded',falseError);
+            pubsub.sub('app/removeClick' , removeTicket);
+            pubsub.sub('app/likeClick' , changeLike);
+            pubsub.sub('app/gotInput' , setQuery);
+
+        })(),
     
-    var initApp = {
-        vnode : patch(utils.container , view.viewAll(utils.data , utils.error)),
-        init : function(){
-            window.addEventListener('DOMContentLoaded' , view.render);
-        }
-    }
+        fetchFn = (function(){
+        
+            function fetchReq(url){
+                fetch(url)
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(fetchCb)
+                    .catch(function(ex) {
+                        console.log('parsing failed', ex)
+                    })   
+            };
+
+            function fetchCb(json){
+                pubsub.pub('app/fetched' , [ json , appData]);   
+            };
+
+            pubsub.sub('app/gotUrl' , fetchReq);
+
+        })();
     
-    initApp.init();
+    pubsub.pub('DOMloaded' , appData);
+
 },
 
 {"../../h.js":2,"../../modules/class":4,"../../modules/eventlisteners":5,"../../modules/props":6,"../../modules/style":7,"../../snabbdom.js":8}],2:[function(require,module,exports){
